@@ -10,10 +10,12 @@ stty com0 115200
 set tty com0
 ```
 "115200" is the baud rate of the COM port.
+
 # IPv4 Router Setup
 The [PF router guide](https://www.openbsd.org/faq/pf/example1.html) is well-written and thorough.
 
 # IPv6 Router Setup
-The [lipidity.com unofficial router guide sequel](https://lipidity.com/openbsd/router/) is well-written and thorough.
+If your ISP already supports IPv6, the [lipidity.com unofficial router guide sequel](https://lipidity.com/openbsd/router/) is well-written and thorough.
 
 # Hurricane Electric Tunnel Setup
+For folks waiting for native IPv6 support or folks wanting a stable IPv6 prefix, Hurricane Electric's [tunnel broker](https://www.tunnelbroker.net/) provides a clean, stable [6in4](https://en.wikipedia.org/wiki/6in4) service.
