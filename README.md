@@ -18,4 +18,15 @@ The [PF router guide](https://www.openbsd.org/faq/pf/example1.html) is well-writ
 If your ISP already supports IPv6, the [lipidity.com unofficial router guide sequel](https://lipidity.com/openbsd/router/) is well-written and thorough.
 
 # Hurricane Electric Tunnel Setup
-For folks waiting for native IPv6 support or folks wanting a stable IPv6 prefix, Hurricane Electric's [tunnel broker](https://www.tunnelbroker.net/) provides a clean, stable [6in4](https://en.wikipedia.org/wiki/6in4) service.
+For folks lacking native IPv6 support or a static IPv6 prefix, Hurricane Electric's [tunnel broker](https://www.tunnelbroker.net/) provides a clean, stable [6in4](https://en.wikipedia.org/wiki/6in4) service.
+
+The tunnelbroker.net web interface provides a sample tunnel configuration, typically saved in `/etc/hostname.gif0`. Below is an example configuration, borrowed from [Glitchworks](https://github.com/chapmajs/Examples/blob/master/openbsd/hostname.gif0).
+
+In this example, `209.51.161.14` is the Hurricane Electric IPv4 tunnel endpoint, `2001:db8:1::1` is the Hurricane Electric IPv6 tunnel endpoint, and `2001:db8:1::2` is the client tunnel endpoint. Addresses from the `2001:db8:1::` prefix **should not** be assigned to local hosts. A separate, routed prefix for assignment to local hosts is provided in the tunnel settings page.
+
+```
+description "Hurricane Electric IPv6 tunnel"
+!ifconfig gif0 tunnel $(ifconfig egress | awk '$1 ~ /^inet$/{print $2}') 209.51.161.14
+!ifconfig gif0 inet6 alias 2001:db8:1::2 2001:db8:1::1 prefixlen 128
+!route -n add -inet6 default 2001:db8:1::1
+```
