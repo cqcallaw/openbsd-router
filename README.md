@@ -30,7 +30,7 @@ description "Hurricane Electric IPv6 tunnel"
 ```
 
 ## Firewall Rules for 6in4 Tunneling
-The 6in4 tunnel generates [Protocol 41](https://simple.wikipedia.org/wiki/Protocol_41) traffic, which is not passed by most common pf rulesets. Protocol 41 traffic can be passed with an update to `/etc/pf.conf` of the following form:
+The 6in4 tunnel generates [Protocol 41](https://simple.wikipedia.org/wiki/Protocol_41) traffic, which isn't passed by basic pf rulesets. Protocol 41 traffic can be passed with an update to `/etc/pf.conf` of the following form:
 ```
 tunnel = "<HE IPv4 endpoint>"
 wan = "<WAN interface>"
@@ -39,10 +39,10 @@ pass in proto 41 from $tunnel to $wan keep state
 pass out proto 41 from $wan to $tunnel keep state
 ```
 
-Reload pf rules (`pfctl -f /etc/pf.conf`) for the change to take effect.
+Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 
 ## Dynamic Client Endpoint Updates
-If your ISP assigns you a dynamic IPv4 address (as many ISPs do), you will need to notify Hurricane Electric's servers when the tunnel's IPv4 client endpoint changes. This is best accomplished with a script that runs as a cronjob.
+If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a script that runs as a cronjob.
 
 ```
 #!/bin/sh
@@ -104,7 +104,7 @@ You should see the crontab editor load (usually this is [vim](http://vimsheet.co
 
 ```
 # update HE.net tunnel endpoint
-15      *       *       *       *       /bin/sh /etc/tunnel_update.sh
+15      *       *       *       *       /bin/sh /path/to/tunnel_update_script.sh
 ```
 
 Save and quit to apply the changes.
