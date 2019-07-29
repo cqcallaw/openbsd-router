@@ -4,10 +4,10 @@ A guide to using OpenBSD for a dual stack (IPv4 and IPv6) SOHO router. Tested on
 The OpenBSD [installation guide](https://www.openbsd.org/faq/faq4.html) is well-written and thorough. A few caveats:
 
 1. Using HTTP for the file sets is recommended; I was unable to access the file sets on the USB boot media from installer's ramdisk environment.
-2. For devices like the apu2d4 without a VGA (pc0) port, the installer gets stuck in a boot loop unless the default terminal is [re-configured to use the COM port](http://openbsd-archive.7691.n7.nabble.com/PC-Engines-apu2c4-install-reboot-loop-td311126.html#a311131). To summarize, the following commands must be typed at boot prompt.
+2. For devices like the apu2d4 without a VGA (pc0) port, the installer gets stuck in a boot loop unless the default terminal is [re-configured to use the COM port](http://openbsd-archive.7691.n7.nabble.com/PC-Engines-apu2c4-install-reboot-loop-td311126.html#a311131). In short, the following commands must be typed at boot prompt.
     ```
-    stty com0 115200
-    set tty com0
+    boot> stty com0 115200
+    boot> set tty com0
     ```
     `115200` is the baud rate of the COM port.
 
@@ -42,24 +42,11 @@ pass out proto 41 from $wan to $tunnel keep state
 Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 
 ## Dynamic Client Endpoint Updates
-If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a script that runs as a cronjob.
+If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script running as a cronjob.
 
 ```
 #!/bin/sh
 # HE tunnel update, based on https://github.com/chapmajs/Examples/blob/master/openbsd/update_he.sh
-
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later 
-# version.
-
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
-# details.
-
-# You should have received a copy of the GNU General Public License along with
-# this program. If not, see http://www.gnu.org/licenses/.
 
 USERNAME=<user name>
 PASSWORD=<tunnel password>
@@ -94,13 +81,13 @@ case $( echo "$result" | awk '{ print $1 }' ) in
 esac
 ```
 
-This script will run as a cronjob, so save it in a convenient location (I use `/etc/tunnel_update.sh`), then edit the root crontab:
+Save the script to a convenient location (I use `/etc/tunnel_update.sh`), then edit the root crontab:
 
 ```
 crontab -e -u root
 ```
 
-You should see the crontab editor load (usually this is [vim](http://vimsheet.com/)). Add the following lines to run the update script every 15 minutes:
+You should see the crontab editor load (usually [vim](http://vimsheet.com/)). Add the following lines to run the update script every 15 minutes:
 
 ```
 # update HE.net tunnel endpoint
@@ -109,9 +96,11 @@ You should see the crontab editor load (usually this is [vim](http://vimsheet.co
 
 Save and quit to apply the changes.
 
+`curl` isn't part of the base OpenBSD installation, but can be installed with the command "pkg_add curl".
+
 ### Firewall Rules for Dynamic Endpoint Update
 
-Hurricane Electric's servers will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf permits ping requests from HE's server:
+Hurricane Electric's servers will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
 
 ```
 pass in on egress proto icmp from 66.220.2.74
