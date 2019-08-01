@@ -42,7 +42,16 @@ pass out proto 41 from $wan to $tunnel keep state
 Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 
 ## Dynamic Client Endpoint Updates
-If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script running as a cronjob.
+If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
+
+This technique requires curl and ifstated, so we must start by enabling these prerequisites:
+
+```
+# pkg_add curl
+# rcctl enable ifstated
+```
+
+The following tunnel broker update script wraps `curl` with some helpful logging information:
 
 ```
 #!/bin/sh
@@ -81,22 +90,78 @@ case $( echo "$result" | awk '{ print $1 }' ) in
 esac
 ```
 
-Save the script to a convenient location (I use `/etc/tunnel_update.sh`), then edit the root crontab:
+This script can be saved in any convenient location; I use `/etc/tunnel_update.sh`.
+
+`ifstated` is controlled by the `/etc/ifstated.conf` configuration file; the following config will trigger a tunnel endpoint update based on the state of network interface `em1`. The observed interface(s) can be adjusted as necessary:
 
 ```
-crontab -e -u root
+# Adapted from https://github.com/vedetta-com/vedetta/blob/master/src/etc/ifstated.conf
+
+# Global Configuration
+
+init-state auto
+
+# Macros
+
+egress_up  = "em1.link.up"
+
+# pint a well-known IPv4 address to check for connectivity
+# any well-known IPv4 address can be used here
+inet  = '( "ping -q -c 1 -w 4 72.52.104.74 > /dev/null" every 60 )'
+
+# State Definitions
+
+state auto {
+	if (! $egress_up) {
+		run "logger -t ifstated '(auto) egress down'"
+		set-state ifdown
+	}
+	if ($egress_up) {
+		run "logger -t ifstated '(auto) egress up'"
+		set-state ifup
+	}
+}
+
+state ifdown {
+	init {
+		run "sh /etc/netstart em1 && \
+		     logger -t ifstated '(ifdown) egress reset'"
+	}
+	if ($egress_up) {
+		run "logger -t ifstated '(ifdown) egress up'"
+		set-state ifup
+	}
+}
+
+state ifup {
+        init {
+                run "logger -t ifstated '(ifup) entered ifup state'"
+        }
+	if ($inet) {
+		run "logger -t ifstated (ifup) IPv4 connection established."
+		set-state internet
+	}
+	if (! $inet && "sleep 10" every 10) {
+		run "logger -t ifstated '(ifup) IPv4 down'"
+		set-state ifdown
+	}
+}
+
+state internet {
+        init {
+                run "logger -t ifstated '(ifup) entered internet state'"
+        }
+	if ($inet) {
+		run "logger -t ifstated (internet) Running tunnelbroker update..."
+		run "sh /etc/tunnel_update.sh | logger -t tb.net"
+		run "logger -t ifstated (internet) Ran tunnelbroker update"
+	}
+	if (! $inet) {
+		run "logger -t ifstated (internet) Lost IPv4 connection"
+		set-state auto
+	}
+}
 ```
-
-You should see the crontab editor load (usually [vim](http://vimsheet.com/)). Add the following lines to run the update script every 15 minutes:
-
-```
-# update HE.net tunnel endpoint
-15      *       *       *       *       /bin/sh /path/to/tunnel_update_script.sh
-```
-
-Save and quit to apply the changes.
-
-`curl` isn't part of the base OpenBSD installation, but can be installed with the command "pkg_add curl".
 
 ### Firewall Rules for Dynamic Endpoint Update
 
