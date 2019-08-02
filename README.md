@@ -30,7 +30,7 @@ description "Hurricane Electric IPv6 tunnel"
 ```
 
 ## Firewall Rules for 6in4 Tunneling
-The 6in4 tunnel generates [Protocol 41](https://simple.wikipedia.org/wiki/Protocol_41) traffic, which isn't passed by basic pf rulesets. Protocol 41 traffic can be passed with an update to `/etc/pf.conf` of the following form:
+The 6in4 tunnel generates [Protocol 41](https://simple.wikipedia.org/wiki/Protocol_41) traffic, which isn't passed by basic pf rulesets. Protocol 41 traffic can be passed by updating `/etc/pf.conf` with rules of the following form:
 ```
 tunnel = "<HE IPv4 endpoint>"
 wan = "<WAN interface>"
@@ -42,9 +42,9 @@ pass out proto 41 from $wan to $tunnel keep state
 Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 
 ## Dynamic Client Endpoint Updates
-If your ISP assigns dynamic IPv4 addresses (as many ISPs do), Hurricane Electric's servers must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
+If your ISP assigns dynamic IPv4 addresses to their clients, Hurricane Electric must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
 
-This technique requires curl and ifstated, so we must start by enabling these prerequisites:
+This technique requires curl and ifstated, so we can start by enabling these prerequisites:
 
 ```
 # pkg_add curl
@@ -105,7 +105,7 @@ init-state auto
 
 egress_up  = "em1.link.up"
 
-# pint a well-known IPv4 address to check for connectivity
+# ping a well-known IPv4 address to check for connectivity
 # any well-known IPv4 address can be used here
 inet  = '( "ping -q -c 1 -w 4 72.52.104.74 > /dev/null" every 60 )'
 
@@ -165,7 +165,7 @@ state internet {
 
 ### Firewall Rules for Dynamic Endpoint Update
 
-Hurricane Electric's servers will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
+The Tunnelbroker service will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
 
 ```
 pass in on egress proto icmp from 66.220.2.74
