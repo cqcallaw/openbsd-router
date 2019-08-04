@@ -164,9 +164,27 @@ state internet {
 ```
 
 ### Firewall Rules for Dynamic Endpoint Update
-
 The Tunnelbroker service will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
 
 ```
 pass in on egress proto icmp from 66.220.2.74
+```
+
+## Multihoming with Hurricane Electric
+If Hurricane Electric's tunneling service is deployed along with some other IPv6 link (i.e. [IPv6 multihoming](https://en.wikipedia.org/wiki/Multihoming#IPv6_multihoming)), care must be taken to route packets to the correct link, or return packets can get dropped upstream. This type of packet drop can be avoided with source-based routing, which routes traffic sourced from the HE prefix to the HE tunnel instead of using the standard routing tables. Source-based routing can be enabled with the following `pf.conf` rules:
+
+```
+...
+lan = "em0"
+he_prefix = "<he_local_prefix>::/<he_local_prefix_length>"
+he_gw_addr = "<HE gateway IP>"
+...
+
+# route HE traffic to HE interface
+## make sure well-known multicast traffic doesn't get re-routed (core features like NDP would break)
+pass in quick on $lan to ff00::/12
+## make sure traffic addressed to the local gateway doesn't get re-routed
+pass in quick on $lan from $he_prefix to $he_gw_addr
+pass in quick on $lan from $he_prefix route-to $he_if
+...
 ```
