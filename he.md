@@ -77,20 +77,13 @@ This script can be saved in any convenient location; I use `/etc/tunnel_update.s
 
 ```
 # Adapted from https://github.com/vedetta-com/vedetta/blob/master/src/etc/ifstated.conf
-
-# Global Configuration
-
 init-state auto
-
-# Macros
 
 egress_up  = "em1.link.up"
 
 # ping a well-known IPv4 address to check for connectivity
 # any well-known IPv4 address can be used here
 inet  = '( "ping -q -c 1 -w 4 72.52.104.74 > /dev/null" every 60 )'
-
-# State Definitions
 
 state auto {
 	if (! $egress_up) {
@@ -105,8 +98,7 @@ state auto {
 
 state ifdown {
 	init {
-		run "sh /etc/netstart em1 && \
-		     logger -t ifstated '(ifdown) egress reset'"
+		run "sh /etc/netstart em1 && logger -t ifstated '(ifdown) egress reset'"
 	}
 	if ($egress_up) {
 		run "logger -t ifstated '(ifdown) egress up'"
@@ -151,7 +143,7 @@ The Tunnelbroker service will ping the new IP address to verify its availability
 pass in on egress proto icmp from 66.220.2.74
 ```
 
-## Multihoming with Hurricane Electric
+## Multihoming
 If Hurricane Electric's tunneling service is deployed together with some other IPv6 link (i.e. [IPv6 multihoming](https://en.wikipedia.org/wiki/Multihoming#IPv6_multihoming)), requests that originate from addresses in the HE prefix must be routed through the HE tunnel, or response packets may get dropped by the service. This type of packet loss can be avoided with source-based routing, which routes traffic based on source address instead of destination address. To enabled source-based routing for the HE tunnel:
 
 1. **Remove** any default route configuration from the tunnel interface file `hostname.gif0`
