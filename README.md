@@ -171,8 +171,10 @@ pass in on egress proto icmp from 66.220.2.74
 ```
 
 ## Multihoming with Hurricane Electric
-If Hurricane Electric's tunneling service is deployed together with some other IPv6 link (i.e. [IPv6 multihoming](https://en.wikipedia.org/wiki/Multihoming#IPv6_multihoming)), requests that originate from addresses in the HE prefix must be routed through the HE tunnel, or response packets may get dropped by the service. This type of packet loss can be avoided with source-based routing, which routes traffic sourced from the HE prefix to the HE tunnel instead of using the standard routing tables. Source-based routing can be enabled with the following `pf.conf` rules:
+If Hurricane Electric's tunneling service is deployed together with some other IPv6 link (i.e. [IPv6 multihoming](https://en.wikipedia.org/wiki/Multihoming#IPv6_multihoming)), requests that originate from addresses in the HE prefix must be routed through the HE tunnel, or response packets may get dropped by the service. This type of packet loss can be avoided with source-based routing, which routes traffic based on source address instead of destination address. To enabled source-based routing for the HE tunnel:
 
+1. **Remove** any default route configuration from the tunnel interface file `hostname.gif0`
+2. Add the following rules to `/etc/pf.conf`:
 ```
 ...
 lan = "em0"
