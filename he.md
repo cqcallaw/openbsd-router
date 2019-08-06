@@ -1,5 +1,5 @@
 # Hurricane Electric Tunnel Setup
-For folks lacking native IPv6 support or a static IPv6 prefix, Hurricane Electric's [tunnel broker](https://www.tunnelbroker.net/) provides a clean, stable [6in4](https://en.wikipedia.org/wiki/6in4) service.
+For folks lacking native IPv6 support or a static IPv6 prefix, Hurricane Electric's [Tunnel Broker](https://www.tunnelbroker.net/) provides a clean, stable [6in4](https://en.wikipedia.org/wiki/6in4) service.
 
 The tunnelbroker.net web interface provides a sample tunnel configuration, typically saved in `/etc/hostname.gif0`. Below is an example configuration, borrowed from [Glitchworks](https://github.com/chapmajs/Examples/blob/master/openbsd/hostname.gif0). In this example, `209.51.161.14` is the Hurricane Electric IPv4 tunnel endpoint, `2001:db8:1::1` is the Hurricane Electric IPv6 tunnel endpoint, and `2001:db8:1::2` is the client tunnel endpoint. Addresses from the `2001:db8:1::` prefix **should not** be assigned to local hosts. A separate, routed prefix for assignment to local hosts is provided in the tunnel settings page.
 
@@ -22,10 +22,10 @@ pass out proto 41 from $wan to $tunnel keep state
 
 Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 
-## Dynamic Client Endpoint Updates
-If your ISP assigns dynamic IPv4 addresses to their clients, Hurricane Electric must be notified when the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
+## Dynamic IPv4 Client Endpoint Updates
+If your ISP assigns dynamic IPv4 addresses, Hurricane Electric must be notified whenever the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
 
-This technique requires curl and ifstated, so we can start by enabling these prerequisites:
+This solution requires curl and ifstated, so we can start by enabling these prerequisites:
 
 ```
 # pkg_add curl
@@ -73,7 +73,7 @@ esac
 
 This script can be saved in any convenient location; I use `/etc/tunnel_update.sh`.
 
-`ifstated` is controlled by the `/etc/ifstated.conf` configuration file; the following config will trigger a tunnel endpoint update based on the state of network interface `em1`. The observed interface(s) can be adjusted as necessary:
+`ifstated` is controlled by the `/etc/ifstated.conf` configuration file; the following config will trigger a tunnel endpoint update based on the state of network interface `em1`. The observed interface can be adjusted as necessary:
 
 ```
 # Adapted from https://github.com/vedetta-com/vedetta/blob/master/src/etc/ifstated.conf
@@ -137,7 +137,7 @@ state internet {
 ```
 
 ### Firewall Rules for Dynamic Endpoint Update
-The Tunnelbroker service will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
+The Tunnel Broker service will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
 
 ```
 pass in on egress proto icmp from 66.220.2.74
