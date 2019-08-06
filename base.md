@@ -8,5 +8,3 @@ The OpenBSD [installation guide](https://www.openbsd.org/faq/faq4.html) is well-
     boot> set tty com0
     ```
     `115200` is the baud rate of the COM port.
-
-
