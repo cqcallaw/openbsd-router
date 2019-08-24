@@ -25,116 +25,16 @@ Reload pf rules with `pfctl -f /etc/pf.conf` for the change to take effect.
 ## Dynamic IPv4 Client Endpoint Updates
 If your ISP assigns dynamic IPv4 addresses, Hurricane Electric must be notified whenever the tunnel's IPv4 client endpoint changes. This is best accomplished with a simple `curl` script triggered by [ifstated](https://man.openbsd.org/ifstated.8).
 
-This solution requires curl and ifstated, so we can start by enabling these prerequisites:
+To enabled dynamic client endpoint updates:
 
-```
-# pkg_add curl
-# rcctl enable ifstated
-```
-
-The following tunnel broker update script wraps `curl` with some helpful logging information:
-
-```
-#!/bin/sh
-# HE tunnel update, based on https://github.com/chapmajs/Examples/blob/master/openbsd/update_he.sh
-
-USERNAME=<user name>
-PASSWORD=<tunnel password>
-TUNNEL_ID=<tunnel password>
-TUNNEL_IF=gif0
-HE_ENDPOINT=<Hurricane Electric IPv4 tunnel end point>
-
-function error_exit
-{
-	>&2 echo "Update failed, result was $1"
-	exit 1
-}
-
-result=$(/usr/local/bin/curl -sS -u $USERNAME:$PASSWORD https://ipv4.tunnelbroker.net/nic/update?hostname=$TUNNEL_ID)
-
-case $( echo "$result" | awk '{ print $1 }' ) in
-	nochg)
-		echo "Update succeeded, no change in IP"
-		;;
-	good)
-		new_ip=$( echo "$result" | awk '{ print $2 }' )
-		
-		if [ "$new_ip" = "127.0.0.1" ]; then
-			error_exit $result
-		else
-			echo "Update succeeded, updating $TUNNEL_IF to $new_ip"
-			/sbin/ifconfig $TUNNEL_IF tunnel $new_ip $HE_ENDPOINT
-		fi;
-		;;
-	*)
-		error_exit $result
-esac
-```
-
-This script can be saved in any convenient location; I use `/etc/tunnel_update.sh`.
-
-`ifstated` is controlled by the `/etc/ifstated.conf` configuration file; the following config will trigger a tunnel endpoint update based on the state of network interface `em1`. The observed interface can be adjusted as necessary:
-
-```
-# Adapted from https://github.com/vedetta-com/vedetta/blob/master/src/etc/ifstated.conf
-init-state auto
-
-egress_up  = "em1.link.up"
-
-# ping a well-known IPv4 address to check for connectivity
-# any well-known IPv4 address can be used here
-inet  = '( "ping -q -c 1 -w 4 72.52.104.74 > /dev/null" every 60 )'
-
-state auto {
-	if (! $egress_up) {
-		run "logger -t ifstated '(auto) egress down'"
-		set-state ifdown
-	}
-	if ($egress_up) {
-		run "logger -t ifstated '(auto) egress up'"
-		set-state ifup
-	}
-}
-
-state ifdown {
-	init {
-		run "sh /etc/netstart em1 && logger -t ifstated '(ifdown) egress reset'"
-	}
-	if ($egress_up) {
-		run "logger -t ifstated '(ifdown) egress up'"
-		set-state ifup
-	}
-}
-
-state ifup {
-        init {
-                run "logger -t ifstated '(ifup) entered ifup state'"
-        }
-	if ($inet) {
-		run "logger -t ifstated (ifup) IPv4 connection established."
-		set-state internet
-	}
-	if (! $inet && "sleep 10" every 10) {
-		run "logger -t ifstated '(ifup) IPv4 down'"
-		set-state ifdown
-	}
-}
-
-state internet {
-        init {
-                run "logger -t ifstated '(ifup) entered internet state'"
-        }
-	if ($inet) {
-		run "logger -t ifstated (internet) Running tunnelbroker update..."
-		run "sh /etc/tunnel_update.sh | logger -t tb.net"
-		run "logger -t ifstated (internet) Ran tunnelbroker update"
-	}
-	if (! $inet) {
-		run "logger -t ifstated (internet) Lost IPv4 connection"
-		set-state auto
-	}
-}
-```
+1. Install curl and ifstated prerequisites:
+   ```
+   # pkg_add curl
+   # rcctl enable ifstated
+   ```
+2. Save [tunnel_update.sh](tunnel_update.sh) to any convenient location on the router; I use `/etc/tunnel_update.sh`
+3. Save [ifstated.conf](ifstated.conf) to `/etc/ifstated.conf` on the router
+4. Update the interface names in `ifstated.conf` as necessary
 
 ### Firewall Rules for Dynamic Endpoint Update
 The Tunnel Broker service will ping the new IP address to verify its availability before updating the tunnel endpoint, so it's also important to ensure pf allows these ping requests:
