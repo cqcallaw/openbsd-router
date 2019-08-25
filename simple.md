@@ -16,6 +16,7 @@ If your ISP already supports IPv6, the [lipidity.com unofficial router guide seq
 ## Notes on Prefix Delegation
 ISPs generally assign an IPv6 *prefix* to their customers instead of a single address. NAT is therefore not required, though having a publicly routable IP has security implications which make the use of [privacy extensions](https://tools.ietf.org/html/rfc4941) advisable.
 
-`/64` is the standard end-user prefix length for IPv6 prefix delegations, but some ISPs provide shorter prefixes such `/48` or `/56`which allows the local network administrator to [subnet](https://www.tutorialspoint.com/ipv6/ipv6_subnetting.htm) the delegated address space into multiple local networks. The final prefix assigned to individual hosts on the network should always be `/64`, so we can form the subnet ID from the bits that must be added to the ISP-delegated prefix to obtain a prefix length of 64. These additional bits also called a Site-Level Aggregation ID or SLA ID in various IPv6 documentation.
-
+`/64` is the standard end-user prefix length for IPv6 prefix delegations, but some ISPs provide shorter prefixes such `/48` or `/56`which allows the local network administrator to [subnet](https://www.tutorialspoint.com/ipv6/ipv6_subnetting.htm) the delegated address space into multiple local networks. The final prefix assigned to individual hosts on the network should always be `/64`, so we can form the subnet ID from the bits that must be added to the ISP-delegated prefix to obtain a prefix length of 64. 
 For a `/56` prefix, we must add **8** bits to get 64, which means there are 2^8 (256) subnet IDs available. For a `/48` prefix, we must add **16** bits get a 64 bit prefix, which means there are 2^16 (65,536) subnet IDs available.
+
+The additional bits added to the ISP-delegated prefix are called a **Site-Level Aggregation ID** or **SLA ID** in various IPv6 documentation.
